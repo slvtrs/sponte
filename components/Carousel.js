@@ -22,6 +22,7 @@ export default class Carousel extends React.Component {
 
   componentDidMount(){
     Actions.getCats(5).then(cats => {
+        // console.log(cats)
       this.setState({
         items: cats,
         loading: false,
@@ -36,12 +37,14 @@ export default class Carousel extends React.Component {
     
     let leftRot = this._scrollX.interpolate({
       inputRange: [0, WIDTH],
-      outputRange: ['0deg', `-90deg`],
+      // outputRange: ['0deg', `-90deg`],
+      outputRange: ['0deg', `60deg`],
       extrapolate: 'clamp',
     });
     let rightRot = this._scrollX.interpolate({
       inputRange: [0, WIDTH],
-      outputRange: ['90deg', `0deg`],
+      // outputRange: ['90deg', `0deg`],
+      outputRange: ['-60deg', `0deg`],
       extrapolate: 'clamp',
     });
 
@@ -56,7 +59,6 @@ export default class Carousel extends React.Component {
           style={styles.scroller} 
           ref={component => this._scrollView = component}
           scrollEventThrottle={16}
-          onScrollEndDrag={this.onScrollEndSnapToEdge}
           onScroll={Animated.event(
             [
               {nativeEvent: {contentOffset: {x: this._scrollX}}},
@@ -69,16 +71,17 @@ export default class Carousel extends React.Component {
               }
             }
           )}
+          onScrollEndDrag={this.onScrollEndSnapToEdge}
+          // onMomentumScrollEnd={this.onScrollEndSnapToEdge}
         >
           
           <View style={styles.page}>
             <Animated.View style={[
               styles.imageWrapper,
               {
-                position: 'absolute',
                 left: WIDTH/2, 
                 transform: [
-                  {perspective: 1000},
+                  {perspective: 5000},
                   {rotateY: leftRot},
                   {translateX: -WIDTH/2},
                 ]
@@ -95,10 +98,9 @@ export default class Carousel extends React.Component {
             <Animated.View style={[
               styles.imageWrapper,
               {
-                position: 'absolute',
                 right: WIDTH/2,
                 transform: [
-                  {perspective: 1000},
+                  {perspective: 5000},
                   {rotateY: rightRot},
                   {translateX: WIDTH/2},
                 ]
@@ -126,11 +128,11 @@ export default class Carousel extends React.Component {
 
   onScrollEndSnapToEdge = event => {
     const x = event.nativeEvent.contentOffset.x;
-    if (0 < x && x < WIDTH / 2) {
+    if (0 < x && x < WIDTH / 3) {
       if (this._scrollView.getNode()) {
         this._scrollView.getNode().scrollTo({x: 0});
       }
-    } else if (WIDTH / 2 <= x && x < WIDTH) {
+    } else if (WIDTH / 3 <= x && x < WIDTH) {
       if (this._scrollView.getNode()) {
         this._scrollView.getNode().scrollTo({x: WIDTH});
       }
@@ -170,7 +172,7 @@ const styles = StyleSheet.create({
   scroller: {
     // width: Dimensions.get('screen').width,
     // flexDirection: 'column',
-    // transform: [{scale: 0.75}],
+    // transform: [{scale: 0.5}],
   },
   left: {
     position: 'absolute',
@@ -184,16 +186,22 @@ const styles = StyleSheet.create({
   },
   page: {
     width: WIDTH,
-    overflow: 'hidden',
+    // overflow: 'hidden',
+    padding: WIDTH*0.1,
+    paddingHorizontal: WIDTH*0.2,
+    backgroundColor: 'white',
     // borderWidth: 2, borderColor: 'red',
   },
   imageWrapper: {
-    
-    overflow: 'hidden',
+    flex: 1,
+    alignSelf: 'stretch',
+    borderWidth: 6, borderColor: '#c3e',
   },
   image: {
-    width: Dimensions.get('screen').width,
-    height: Dimensions.get('screen').height,
+    // width: Dimensions.get('screen').width,
+    // height: Dimensions.get('screen').height,
+    flex: 1,
+    alignSelf: 'stretch',
     // resizeMode: 'cover',
   },
 });
