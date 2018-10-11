@@ -102,7 +102,7 @@ export default class Feed extends React.Component {
             styles.container,
             {top: yOffset},
           ]} 
-          {...this.panResponder.panHandlers}
+          //{...this.panResponder.panHandlers}
         >
           <Carousel propagateTouch={!this.state.visible} onReveal={this.handleReveal} />
         </Animated.View>
