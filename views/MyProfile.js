@@ -66,7 +66,7 @@ export default class MyProfile extends React.Component {
         </View>
         <TouchableOpacity onPress={this.handlePost} disabled={status!='open'}>
           <View>
-            <MaterialCommunityIcons name={`plus-circle`} size={140} color={status!='open' ? 'gray' : 'blue'} style={styles.icon} />
+            <MaterialCommunityIcons name={`plus-circle`} size={140} color={status!='open' ? 'gray' : 'green'} style={styles.icon} />
           </View>
         </TouchableOpacity>
         <TouchableOpacity style={styles.button} onPress={this.props.onHide}>
@@ -85,7 +85,7 @@ export default class MyProfile extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // backgroundColor: 'red',
+    backgroundColor: '#555',
     alignItems: 'center',
     justifyContent: 'space-around',
   },

@@ -12,7 +12,9 @@ export default class Feed extends React.Component {
     super()
     this.state = {
       visible: true,
+      yOffset: 0,
     }
+    this._swipeDirection
   }
 
   componentDidUpdate(prevProps, prevState, snapshot){
@@ -26,27 +28,42 @@ export default class Feed extends React.Component {
     this.yOffsetAnim = new Animated.Value(0);
     this._yOffset = 0
     this.yOffsetAnim.addListener((value) => {
-      // console.log(value.value)
       this._yOffset = Math.max( 0, value.value)
+      this.setState({yOffset: this._yOffset})
     })
 
     this.panResponder = PanResponder.create({
-      onStartShouldSetPanResponder: (evt, gestureState) => true,
-      onMoveShouldSetPanResponder: (evt, gestureState) => true,
-      onPanResponderGrant: (e, gestureState) => {
+      onMoveShouldSetResponderCapture: () => true,
+      onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
+        if (Math.abs(gestureState.dy) > 10) {
+          return true;
+        }
+        return false;
+      },
+      onMoveShouldSetPanResponder: this.canMove,
+      onPanResponderGrant: () => {
         this.yOffsetAnim.setOffset(this._yOffset)
         this.yOffsetAnim.setValue(0)
       },
-      onPanResponderMove: Animated.event([
-        null, { dx: 0, dy: this.yOffsetAnim}
-      ]),
-      // onPanResponderMove: (e: Object, gestureState: Object) => {
-      //   console.log(this._yOffset)
-      //   return Animated.event([
-      //     null, { dx: 0, dy: this.yOffsetAnim}
-      //   ])
-      // },
+      onPanResponderMove: (e, gestureState) => {
+        if(!this._swipeDirection) this.checkSwipeDirection(gestureState);
+        // if (this.isSwipingOverLeftBorder(gestureState) ||
+        //   this.isSwipingOverRightBorder(gestureState)) return;
+
+        Animated.event([null, { 
+          dx: 0, dy: this.yOffsetAnim
+        }])(e, gestureState);
+      },
       onPanResponderRelease: (e, gestureState) => {
+        this._swipeDirection = null;
+
+        this.yOffsetAnim.flattenOffset();
+
+        // if (this.isSwipingOverLeftBorder(gestureState) ||
+        //     this.isSwipingOverRightBorder(gestureState)) {
+        //     return;
+        // }
+
         let bottom = this.screenHeight - 60
         let target = 0
         let speed = 5
@@ -69,7 +86,9 @@ export default class Feed extends React.Component {
           bounicness: 5,
           overshootClamping: true,
         }).start();
+
         // this.yOffsetAnim.flattenOffset();
+
         // Animated.decay(this.yOffsetAnim, {
         //   deceleration: 0.997,
         //   // velocity: { x: gestureState.vx, y: gestureState.vy }
@@ -77,6 +96,31 @@ export default class Feed extends React.Component {
         // }).start();
       },
     })
+  }
+
+  checkSwipeDirection(gestureState) {
+    if( 
+      (Math.abs(gestureState.dx) > Math.abs(gestureState.dy / 2) ) &&
+      (Math.abs(gestureState.vx) > Math.abs(gestureState.vy / 2) )
+    ) {
+      this._swipeDirection = "horizontal";
+    } else {
+      this._swipeDirection = "vertical";
+    }
+    console.log('sipwdir is', this._swipeDirection)
+  }
+  canMove() {
+    setTimeout(() => {
+
+    if(this._swipeDirection === "vertical") {
+      // console.log('can move')
+      return true;
+    } else {
+      // console.log('CANT')
+      return true;
+    }
+
+    },0)
   }
 
   handleReveal = () => {
@@ -97,15 +141,15 @@ export default class Feed extends React.Component {
     });
 
     return (
-        <Animated.View 
-          style={[
-            styles.container,
-            {top: yOffset},
-          ]} 
-          //{...this.panResponder.panHandlers}
-        >
-          <Carousel propagateTouch={!this.state.visible} onReveal={this.handleReveal} />
-        </Animated.View>
+      <Animated.View 
+        style={[
+          styles.pan,
+          {top: yOffset},
+        ]} 
+        {...this.panResponder.panHandlers}
+      >
+        <Carousel propagateTouch={!this.state.visible} onReveal={this.handleReveal} yOffset={this.state.yOffset} />
+      </Animated.View>
     );
   }
 
@@ -116,10 +160,21 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'absolute',
-    top: 0, right: 0, left: 0, 
-    height: Dimensions.get('screen').height,
+    // position: 'absolute',
+    // top: 0, right: 0, left: 0, 
+    ...StyleSheet.absoluteFillObject,
+    // height: Dimensions.get('screen').height,
+    // backgroundColor: "#333",
+  },
+  pan: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    // position: 'absolute',
+    // top: 0, right: 0, left: 0, 
+    // height: Dimensions.get('screen').height,
     backgroundColor: "#333",
+    ...StyleSheet.absoluteFillObject,
   },
   text: {
     color: "#FFF",
