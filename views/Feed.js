@@ -6,6 +6,8 @@ import Content from '../constants/Content'
 
 import Carousel from '../components/Carousel';
 
+const HEIGHT = Dimensions.get('window').height
+
 export default class Feed extends React.Component {
 
   constructor(){
@@ -28,8 +30,15 @@ export default class Feed extends React.Component {
     this.yOffsetAnim = new Animated.Value(0);
     this._yOffset = 0
     this.yOffsetAnim.addListener((value) => {
-      this._yOffset = Math.max( 0, value.value)
-      this.setState({yOffset: this._yOffset})
+      // this._yOffset = Math.max( 0, value.value)
+      // this.setState({yOffset: this._yOffset})
+      this.setState({yOffset: value.value})
+      if(value.value >= 0 && this.props.bgView != 'MyProfile'){
+        this.props.setBgView('MyProfile')
+      }
+      else if(value.value < 0 && this.props.bgView != 'Profile'){
+        this.props.setBgView('Profile')
+      }
     })
 
     this.panResponder = PanResponder.create({
@@ -70,6 +79,12 @@ export default class Feed extends React.Component {
         if(this.state.visible){
           if (this.yOffsetAnim._value >= 150) {
             target = bottom
+            speed = 10
+            this.props.handleDidHide()
+            this.setState({visible: false})
+          }
+          else if (this.yOffsetAnim._value <= -150) {
+            target = -bottom + 40
             speed = 10
             this.props.handleDidHide()
             this.setState({visible: false})
@@ -135,8 +150,8 @@ export default class Feed extends React.Component {
     
   render() {
     let yOffset = this.yOffsetAnim.interpolate({
-      inputRange: [0, Infinity],
-      outputRange: [0, Infinity],
+      inputRange: [-9999, Infinity],
+      outputRange: [-9999, Infinity],
       extrapolate: 'clamp',
     });
 
@@ -156,25 +171,15 @@ export default class Feed extends React.Component {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    // position: 'absolute',
-    // top: 0, right: 0, left: 0, 
-    ...StyleSheet.absoluteFillObject,
-    // height: Dimensions.get('screen').height,
-    // backgroundColor: "#333",
-  },
   pan: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    // position: 'absolute',
-    // top: 0, right: 0, left: 0, 
-    // height: Dimensions.get('screen').height,
+    position: 'absolute',
+    top: 0, right: 0, left: 0, 
+    height: HEIGHT,
     backgroundColor: "#333",
-    ...StyleSheet.absoluteFillObject,
+    // ...StyleSheet.absoluteFillObject,
   },
   text: {
     color: "#FFF",

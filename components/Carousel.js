@@ -5,8 +5,8 @@ import { Text, TouchableOpacity, TouchableWithoutFeedback, View, StyleSheet, Ani
 
 import Actions from '../utilities/Actions';
 
-const WIDTH = Dimensions.get('screen').width
-const HEIGHT = Dimensions.get('screen').height
+const WIDTH = Dimensions.get('window').width
+const HEIGHT = Dimensions.get('window').height
 const PADDING = WIDTH * 0.1
 const BORDER = 8
 
@@ -124,7 +124,11 @@ export default class Carousel extends React.Component {
             return (
               <View style={styles.page} key={i}>
                 <TouchableWithoutFeedback onPress={this.handleBack} disabled={false}>
-                  <View style={styles.left} />
+                  <View style={styles.left}>
+                    {/*<TouchableOpacity onPress={() => alert('avatar')}>
+                      <View style={styles.avatarWrapper} />
+                    </TouchableOpacity>*/}
+                  </View>
                 </TouchableWithoutFeedback>
                 <Animated.View style={[
                   styles.imageWrapper,
@@ -264,8 +268,19 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: -PADDING*2, 
     right: -PADDING*2,
-    bottom: -PADDING - BORDER,
-    height: HEIGHT - PADDING - BORDER,
+    bottom: -PADDING-BORDER,
+    // height: HEIGHT - PADDING - BORDER,
+    height: HEIGHT + BORDER*2,
     backgroundColor: 'black',
   },
+  avatarWrapper: {
+    position: 'absolute',
+    top: PADDING,
+    left: PADDING/2,
+    // transform: [{translateX: '-50%'}],
+    width: PADDING,
+    height: PADDING,
+    borderRadius: PADDING,
+    backgroundColor: 'red',
+  }
 });

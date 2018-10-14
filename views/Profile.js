@@ -9,9 +9,12 @@ export default class Profile extends React.Component {
 
   render() {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, this.props.visible ? null : styles.hidden]}>
         <View>
           <Text style={styles.text}>Other Profile</Text>
+          <TouchableOpacity style={styles.button} onPress={this.props.onHide}>
+            <Text style={styles.text}>Return</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -26,15 +29,24 @@ export default class Profile extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // backgroundColor: 'red',
+    backgroundColor: '#fdd',
     alignItems: 'center',
     justifyContent: 'space-around',
+    ...StyleSheet.absoluteFillObject,
+  },
+  hidden: {
+    display: 'none',
   },
   button : {
     borderWidth: 1,
     padding: 10,
   },
   text: {
-    // color: 'white'
+    textAlign: 'center',
+  },
+  button : {
+    borderWidth: 1,
+    padding: 10,
+    marginVertical: 40,
   },
 });

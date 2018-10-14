@@ -5,6 +5,7 @@ import Layout from './constants/Layout'
 import Content from './constants/Content'
 
 import MyProfile from './views/MyProfile';
+import Profile from './views/Profile';
 import Feed from './views/Feed';
 
 export default class App extends React.Component {
@@ -13,14 +14,22 @@ export default class App extends React.Component {
     super()
     this.state = {
       feed: true,
+      bgView: 'MyProfile',
     }
   }
 
   render() {
+    let { feed, bgView } = this.state
     return (
       <View style={styles.container}>
-        <MyProfile onHide={this.goToFeed} />
-        <Feed show={this.state.feed} handleDidHide={this.handleLeftFeed} />
+        <MyProfile onHide={this.goToFeed} visible={bgView=='MyProfile'} />
+        <Profile onHide={this.goToFeed} visible={bgView=='Profile'} />
+        <Feed 
+          show={feed} 
+          bgView={bgView}
+          handleDidHide={this.handleLeftFeed} 
+          setBgView={this.setBgView} 
+        />
       </View>
     );
   }
@@ -31,6 +40,10 @@ export default class App extends React.Component {
 
   handleLeftFeed = () => {
     this.setState({feed: false})
+  }
+
+  setBgView = view => {
+    this.setState({bgView: view})
   }
 
 }

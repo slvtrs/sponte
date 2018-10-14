@@ -57,7 +57,7 @@ export default class MyProfile extends React.Component {
     let { windowOpen, status, statusText } = this.state
 
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, this.props.visible ? null : styles.hidden]}>
         <View>
           <Text style={styles.text}>My Profile</Text>
         </View>
@@ -85,13 +85,18 @@ export default class MyProfile extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#555',
+    backgroundColor: '#ddf',
     alignItems: 'center',
     justifyContent: 'space-around',
+    ...StyleSheet.absoluteFillObject,
+  },
+  hidden: {
+    display: 'none',
   },
   button : {
     borderWidth: 1,
     padding: 10,
+    marginBottom: 40,
   },
   text: {
     // color: 'white'
