@@ -1,12 +1,13 @@
 import React from 'react';
 import { StyleSheet, Text, View, Animated, PanResponder } from 'react-native';
+import Layout from 'app/constants/Layout'
+import Content from 'app/constants/Content'
 
-import Layout from './constants/Layout'
-import Content from './constants/Content'
+import Push from 'app/utilities/Push'
 
-import MyProfile from './views/MyProfile';
-import Profile from './views/Profile';
-import Feed from './views/Feed';
+import MyProfile from 'app/views/MyProfile';
+import Profile from 'app/views/Profile';
+import Feed from 'app/views/Feed';
 
 export default class App extends React.Component {
 
@@ -16,6 +17,10 @@ export default class App extends React.Component {
       feed: true,
       bgView: 'MyProfile',
     }
+  }
+
+  componentDidMount(){
+    Push.registerForPushNotificationsAsync()
   }
 
   render() {

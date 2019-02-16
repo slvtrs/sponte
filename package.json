@@ -1,5 +1,5 @@
 {
-  "name": "empty-project-template",
+  "name": "app",
   "main": "node_modules/expo/AppEntry.js",
   "private": true,
   "scripts": {
@@ -9,9 +9,11 @@
     "eject": "expo eject"
   },
   "dependencies": {
-    "expo": "^30.0.1",
+    "@ptomasroos/react-native-multi-slider": "^1.0.0",
+    "babel-plugin-module-resolver": "^3.2.0",
+    "expo": "^32.0.0",
     "moment": "^2.22.2",
-    "react": "16.3.1",
-    "react-native": "https://github.com/expo/react-native/archive/sdk-30.0.0.tar.gz"
+    "react": "16.5.0",
+    "react-native": "https://github.com/expo/react-native/archive/sdk-32.0.0.tar.gz"
   }
 }

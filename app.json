@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "sponte",
+    "name": "lifespyle",
     "description": "This project is really great.",
-    "slug": "sponte",
+    "slug": "lifespyle",
     "privacy": "public",
-    "sdkVersion": "30.0.0",
+    "sdkVersion": "32.0.0",
     "platforms": ["ios", "android"],
     "version": "1.0.0",
     "orientation": "portrait",

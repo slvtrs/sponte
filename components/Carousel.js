@@ -1,14 +1,16 @@
 import React from 'react';
+import ENV from 'config/ENV'
 import PropTypes from 'prop-types'
-import Colors from '../constants/Colors';
+import Colors from 'app/constants/Colors';
 import { Text, TouchableOpacity, TouchableWithoutFeedback, View, StyleSheet, Animated, Easing, Image, Dimensions, ScrollView, Platform } from 'react-native';
+import { Video } from 'expo'
 
-import Actions from '../utilities/Actions';
+import apiActions from 'app/utilities/Actions';
 
 const WIDTH = Dimensions.get('window').width
 const HEIGHT = Dimensions.get('window').height
 const PADDING = WIDTH * 0.1
-const BORDER = 8
+const BORDER = 0
 
 export default class Carousel extends React.Component {
   constructor(props) {
@@ -25,14 +27,17 @@ export default class Carousel extends React.Component {
     this._scrollX = new Animated.Value(0)
   }
 
-  componentDidMount(){
-    Actions.getCats(5).then(cats => {
-        // console.log(cats)
-      this.setState({
-        items: cats,
-        loading: false,
-      })
-    })
+  componentDidMount = async () => {
+    // apiActions.getCats(5).then(cats => {
+    //     // console.log(cats)
+    //   this.setState({
+    //     items: cats,
+    //     loading: false,
+    //   })
+    // })
+    let res = await apiActions.request('posts', 'GET', null, 4).catch(e => console.warn(e))
+    // console.log(res)
+    this.setState({items: res.posts})
   }
 
   componentDidUpdate(prevProps, prevState, snapshot){}
@@ -149,7 +154,7 @@ export default class Carousel extends React.Component {
                     ]
                   } : null,
                 ]}>
-                  <Animated.Image 
+                  {/*<Animated.Image 
                     source={{uri: item.url}}
                     style={[
                       styles.image,
@@ -158,6 +163,22 @@ export default class Carousel extends React.Component {
                       applyLeftAnim ? {transform: [{translateX: leftX}]} : null,
                       applyRightAnim ? {transform: [{translateX: rightX}]} : null,
                     ]}
+                  />*/}
+                  <Video 
+                    source={{uri: `${ENV.ROOT}${item.file.url}`}}
+                    style={styles.video}
+                    // style={[
+                      // styles.image,
+                      // i === step ? {bottom: yOffset-PADDING-BORDER} : null,
+                      // applyLeftAnim ? {transform: [{translateX: leftX}]} : null,
+                      // applyRightAnim ? {transform: [{translateX: rightX}]} : null,
+                    // ]}
+                    rate={1.0}
+                    volume={1.0}
+                    isMuted={false}
+                    resizeMode="cover"
+                    shouldPlay
+                    isLooping
                   />
                 </Animated.View>
                 <TouchableWithoutFeedback onPress={this.handleForward} disabled={false}>
@@ -282,5 +303,15 @@ const styles = StyleSheet.create({
     height: PADDING,
     borderRadius: PADDING,
     backgroundColor: 'red',
-  }
+  },
+  video: {
+    position: 'absolute',
+    top: 50,
+    left: 50,
+    width: 100, 
+    height: 200, 
+    // borderWidth: 2,
+    margin: 10,
+    backgroundColor: 'red',
+  },
 });
