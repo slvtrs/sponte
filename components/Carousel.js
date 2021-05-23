@@ -3,9 +3,10 @@ import ENV from 'config/ENV'
 import PropTypes from 'prop-types'
 import Colors from 'app/constants/Colors';
 import { Text, TouchableOpacity, TouchableWithoutFeedback, View, StyleSheet, Animated, Easing, Image, Dimensions, ScrollView, Platform } from 'react-native';
+import moment from 'moment';
 import { Video } from 'expo'
 
-import apiActions from 'app/utilities/Actions';
+import Tekst from 'app/components/Tekst';
 
 const WIDTH = Dimensions.get('window').width
 const HEIGHT = Dimensions.get('window').height
@@ -13,38 +14,30 @@ const PADDING = WIDTH * 0.1
 const BORDER = 0
 
 export default class Carousel extends React.Component {
+  static propTypes = {
+    props: PropTypes.arrayOf(PropTypes.object),
+    loading: PropTypes.bool,
+    onSetStep: PropTypes.func,
+  }
+
   constructor(props) {
     super(props);
     this.state = {
-      items: [],
-      loading: true,
       step: 0,
       animLeft: new Animated.Value(0),
       propagateTouch: false,
       beginX: 0,
       peakDirection: 'right',
+      muted: true,
     }    
     this._scrollX = new Animated.Value(0)
-  }
-
-  componentDidMount = async () => {
-    // apiActions.getCats(5).then(cats => {
-    //     // console.log(cats)
-    //   this.setState({
-    //     items: cats,
-    //     loading: false,
-    //   })
-    // })
-    let res = await apiActions.request('posts', 'GET', null, 4).catch(e => console.warn(e))
-    // console.log(res)
-    this.setState({items: res.posts})
   }
 
   componentDidUpdate(prevProps, prevState, snapshot){}
 
   render() {
-    let { items, loading, step, beginX, peakDirection } = this.state
-    let { propagateTouch, yOffset } = this.props
+    let { step, beginX, peakDirection, muted } = this.state
+    let { propagateTouch, yOffset, items, loading, feedExpired } = this.props
 
     let animBase
     let animLimit
@@ -79,7 +72,23 @@ export default class Carousel extends React.Component {
       extrapolate: 'clamp',
     });
 
-    if(loading) return <View />
+    if(loading || feedExpired === null) return <View style={styles.container} />
+
+    // feedExpired = false
+
+    if(feedExpired){
+      return (
+        <View style={styles.container}>
+          <View style={styles.page}>
+            <View style={styles.imageWrapper}>
+              <View style={[styles.video, styles.expired]}>
+                <Tekst color={Colors.lightCurtain}>Feed is only visible for 24 hours after your last post.</Tekst>
+              </View>
+            </View>
+          </View>
+        </View>
+      )
+    }
 
     return (
       <View style={styles.container}>
@@ -108,9 +117,10 @@ export default class Carousel extends React.Component {
 
                 // capture onScrollEnd
                 if (offsetX % WIDTH === 0){
-                  const newStep = offsetX/WIDTH
+                  const newStep = (offsetX/WIDTH) || 0
                   if(step !== newStep){
                     this.setState({step: newStep})
+                    this.props.onSetStep(newStep)
                   }
                 }
               }
@@ -120,7 +130,7 @@ export default class Carousel extends React.Component {
           onScrollEndDrag={this.onScrollEndSnapToEdge}
           // onMomentumScrollEnd={console.log('ENDEND MOMENTUM')}
         >
-
+          
           {items.map((item, i) => {
             const applyLeftAnim = (peakDirection == 'right' && i===step ) || 
               (peakDirection == 'left' && i === step - 1)
@@ -135,54 +145,49 @@ export default class Carousel extends React.Component {
                     </TouchableOpacity>*/}
                   </View>
                 </TouchableWithoutFeedback>
-                <Animated.View style={[
-                  styles.imageWrapper,
-                  applyLeftAnim ? {
-                    left: WIDTH/2, 
-                    transform: [
-                      {perspective: 1000},
-                      {rotateY: leftRot},
-                      {translateX: -WIDTH/2},
-                    ]
-                  } : null,
-                  applyRightAnim ? {
-                    right: WIDTH/2, 
-                    transform: [
-                      {perspective: 1000},
-                      {rotateY: rightRot},
-                      {translateX: WIDTH/2},
-                    ]
-                  } : null,
-                ]}>
-                  {/*<Animated.Image 
-                    source={{uri: item.url}}
-                    style={[
-                      styles.image,
-                      // i === step ? {bottom: Math.max(0, yOffset-PADDING-BORDER)} : null
-                      i === step ? {bottom: yOffset-PADDING-BORDER} : null,
-                      applyLeftAnim ? {transform: [{translateX: leftX}]} : null,
-                      applyRightAnim ? {transform: [{translateX: rightX}]} : null,
-                    ]}
-                  />*/}
-                  <Video 
-                    source={{uri: `${ENV.ROOT}${item.file.url}`}}
-                    style={styles.video}
-                    // style={[
-                      // styles.image,
-                      // i === step ? {bottom: yOffset-PADDING-BORDER} : null,
-                      // applyLeftAnim ? {transform: [{translateX: leftX}]} : null,
-                      // applyRightAnim ? {transform: [{translateX: rightX}]} : null,
-                    // ]}
-                    rate={1.0}
-                    volume={1.0}
-                    isMuted={false}
-                    resizeMode="cover"
-                    shouldPlay
-                    isLooping
-                  />
-                </Animated.View>
+                <TouchableWithoutFeedback onPress={() => this.setState({muted: !muted})} disabled={false}>
+                  <Animated.View style={[
+                    styles.imageWrapper,
+                    applyLeftAnim ? {
+                      left: WIDTH/2, 
+                      transform: [
+                        {perspective: 1000},
+                        {rotateY: leftRot},
+                        {translateX: -WIDTH/2},
+                      ]
+                    } : null,
+                    applyRightAnim ? {
+                      right: WIDTH/2, 
+                      transform: [
+                        {perspective: 1000},
+                        {rotateY: rightRot},
+                        {translateX: WIDTH/2},
+                      ]
+                    } : null,
+                  ]}>
+                    <Video 
+                      source={{uri: `${ENV.ROOT}${item.url}`}}
+                      style={[
+                        styles.video,
+                        i === step ? {bottom: yOffset-PADDING-BORDER} : null,
+                        // applyLeftAnim ? {transform: [{translateX: leftX}]} : null,
+                        // applyRightAnim ? {transform: [{translateX: rightX}]} : null,
+                      ]}
+                      rate={1.0}
+                      volume={1.0}
+                      isMuted={muted || step !== i}
+                      resizeMode="cover"
+                      shouldPlay={true}
+                      isLooping
+                    />
+                  </Animated.View>
+                </TouchableWithoutFeedback>
                 <TouchableWithoutFeedback onPress={this.handleForward} disabled={false}>
-                  <View style={styles.right} />
+                  <View style={[styles.right, styles.timeStringWrapper]}>
+                    <View style={styles.timeString}>
+                      <Tekst numberOfLines={1}>{this.formatTimeString(item.created_at)}</Tekst>
+                    </View>
+                   </View>
                 </TouchableWithoutFeedback>
               </View>
             )
@@ -209,7 +214,8 @@ export default class Carousel extends React.Component {
 
   onScrollEndSnapToEdge = event => {
     const x = event.nativeEvent.contentOffset.x;
-    let { beginX, step, items } = this.state
+    let { beginX, step, } = this.state
+    let { items } = this.props
 
     const dxThreshold = 50
     const dx = x - beginX
@@ -235,18 +241,35 @@ export default class Carousel extends React.Component {
   }
 
   handleForward = () => {
+    let { items } = this.props
     const newStep = this.state.step + 1
     const beginX = newStep * WIDTH
     this.setState({beginX, peakDirection: 'right'}, () => {
-      let step = Math.min(this.state.items.length-1, newStep)
+      let step = Math.min(items.length-1, newStep)
       this._scrollView.getNode().scrollTo({x: step * WIDTH})
     })
+  }
+
+  formatTimeString = timestamp => {
+    // timestamp = "2019-03-02T13:05:50-05:00"
+    let weekday = moment(timestamp).format('dddd')
+    let hour = moment(timestamp).get('hours')
+    let phrase = ''
+    if(hour <= 3) phrase = 'witching hours' // 12-3am
+    else if(hour <= 6) phrase = 'early morning' // 3-6am
+    else if(hour <= 9) phrase = 'morning' // 6-9am
+    else if(hour <= 12) phrase = 'late morning' // 9-noon
+    else if(hour <= 15) phrase = 'afternoon' // noon-3pm
+    else if(hour <= 18) phrase = 'late afternoon' // 3-6pm
+    else if(hour <= 21) phrase = 'evening' // 6-9pm
+    else phrase = 'late night' // 9-midnight
+    return `${weekday} - ${phrase}`
   }
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'white',
+    backgroundColor: Colors.blue,
   },
   scroller: {
     // width: Dimensions.get('screen').width,
@@ -270,7 +293,7 @@ const styles = StyleSheet.create({
     // overflow: 'hidden',
     paddingVertical: PADDING,
     paddingHorizontal: PADDING*2,
-    backgroundColor: 'white',
+    backgroundColor: Colors.blue,
     // borderWidth: 2, borderColor: 'red',
     height: HEIGHT,
   },
@@ -292,7 +315,7 @@ const styles = StyleSheet.create({
     bottom: -PADDING-BORDER,
     // height: HEIGHT - PADDING - BORDER,
     height: HEIGHT + BORDER*2,
-    backgroundColor: 'black',
+    backgroundColor: Colors.white
   },
   avatarWrapper: {
     position: 'absolute',
@@ -305,13 +328,30 @@ const styles = StyleSheet.create({
     backgroundColor: 'red',
   },
   video: {
+    flex: 1,
+    alignSelf: 'stretch',
     position: 'absolute',
-    top: 50,
-    left: 50,
-    width: 100, 
-    height: 200, 
-    // borderWidth: 2,
-    margin: 10,
-    backgroundColor: 'red',
+    left: -PADDING*2, 
+    right: -PADDING*2,
+    bottom: -PADDING-BORDER,
+    // height: HEIGHT - PADDING - BORDER,
+    height: HEIGHT + BORDER*2,
+    backgroundColor: Colors.curtain,
+  },
+  expired: {
+    left: 0, right: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 10,
+  },
+  timeStringWrapper: {
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  timeString: {
+    // position: 'absolute',
+    width: HEIGHT - (PADDING * 2),
+    transform: [{rotate: '90deg'},],
   },
 });

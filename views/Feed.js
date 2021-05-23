@@ -1,12 +1,15 @@
 import React from 'react';
 import { StyleSheet, Text, View, Animated, PanResponder, Dimensions } from 'react-native';
 
-import Layout from '../constants/Layout'
-import Content from '../constants/Content'
-
-import Carousel from '../components/Carousel';
+import moment from 'moment';
+import Layout from 'app/constants/Layout'
+import Content from 'app/constants/Content'
+import Colors from 'app/constants/Colors'
 
 const HEIGHT = Dimensions.get('window').height
+import apiActions from 'app/utilities/Actions';
+
+import Carousel from 'app/components/Carousel';
 
 export default class Feed extends React.Component {
 
@@ -15,8 +18,23 @@ export default class Feed extends React.Component {
     this.state = {
       visible: true,
       yOffset: 0,
+      items: [],
+      loading: true,
     }
     this._swipeDirection
+  }
+
+  componentDidMount = async () => {
+    let res = await apiActions.request('posts', 'GET', null, 4).catch(e => console.warn(e))
+    let items = res.posts
+    this.setState({
+      items,
+      loading: false,
+    })
+    if(items.length){
+      let otherId = items[0].profile_id
+      this.props.setOtherId(otherId)
+    }
   }
 
   componentDidUpdate(prevProps, prevState, snapshot){
@@ -73,17 +91,18 @@ export default class Feed extends React.Component {
         //     return;
         // }
 
-        let bottom = this.screenHeight - 60
+        let threshold = 100
+        let bottom = this.screenHeight - 100
         let target = 0
         let speed = 5
         if(this.state.visible){
-          if (this.yOffsetAnim._value >= 150) {
+          if (this.yOffsetAnim._value >= threshold) {
             target = bottom
             speed = 10
             this.props.handleDidHide()
             this.setState({visible: false})
           }
-          else if (this.yOffsetAnim._value <= -150) {
+          else if (this.yOffsetAnim._value <= -threshold) {
             target = -bottom + 40
             speed = 10
             this.props.handleDidHide()
@@ -115,14 +134,14 @@ export default class Feed extends React.Component {
 
   checkSwipeDirection(gestureState) {
     if( 
-      (Math.abs(gestureState.dx) > Math.abs(gestureState.dy / 2) ) &&
-      (Math.abs(gestureState.vx) > Math.abs(gestureState.vy / 2) )
+      (Math.abs(gestureState.dx) > Math.abs(gestureState.dy * 0.6) ) &&
+      (Math.abs(gestureState.vx) > Math.abs(gestureState.vy * 0.6) )
     ) {
       this._swipeDirection = "horizontal";
     } else {
       this._swipeDirection = "vertical";
     }
-    console.log('sipwdir is', this._swipeDirection)
+    console.log('slideDir is', this._swipeDirection)
   }
   canMove() {
     setTimeout(() => {
@@ -149,6 +168,7 @@ export default class Feed extends React.Component {
   }
     
   render() {
+    let { items, loading, visible, } = this.state
     let yOffset = this.yOffsetAnim.interpolate({
       inputRange: [-9999, Infinity],
       outputRange: [-9999, Infinity],
@@ -163,9 +183,26 @@ export default class Feed extends React.Component {
         ]} 
         {...this.panResponder.panHandlers}
       >
-        <Carousel propagateTouch={!this.state.visible} onReveal={this.handleReveal} yOffset={this.state.yOffset} />
+        <Carousel 
+          items={items} 
+          loading={loading} 
+          propagateTouch={!visible} 
+          onReveal={this.handleReveal} 
+          yOffset={this.state.yOffset} 
+          onSetStep={this.handleSetStep} 
+          feedExpired={this.props.feedExpired}
+        />
       </Animated.View>
     );
+  }
+
+  handleSetStep = (step) => {
+    let { items } = this.state
+    let item = items[step]
+    if(item){
+      let otherId = item.profile_id
+      this.props.setOtherId(otherId)
+    }
   }
 
 }
@@ -178,8 +215,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0, right: 0, left: 0, 
     height: HEIGHT,
-    backgroundColor: "#333",
-    // ...StyleSheet.absoluteFillObject,
+    backgroundColor: Colors.blue,
   },
   text: {
     color: "#FFF",

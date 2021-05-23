@@ -1,5 +1,5 @@
 import { Permissions, Notifications } from 'expo';
-import { ENV } from 'config/ENV'
+import apiActions from 'app/utilities/Actions';
 
 const Push = {
   async registerForPushNotificationsAsync(){
@@ -16,6 +16,7 @@ const Push = {
       const { status } = await Permissions.askAsync(Permissions.NOTIFICATIONS);
       finalStatus = status;
     }
+    console.log(finalStatus)
 
     // Stop here if the user did not grant permissions
     if (finalStatus !== 'granted') {
@@ -24,26 +25,11 @@ const Push = {
 
     // Get the token that uniquely identifies this device
     let token = await Notifications.getExpoPushTokenAsync();
-
-    // POST the token to your backend server from where you can retrieve it to send push notifications.
     console.log(token)
-    return
 
-    return fetch(ENV.API + 'push-token', {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        token: {
-          value: token,
-        },
-        user: {
-          username: 'Brent',
-        },
-      }),
-    });
+    let data = { device: { push_token: token } }
+    let res = await apiActions.request('devices/update', 'PATCH', data).catch(e => console.warn(e))
+     // console.log(res)
   },
 }
 

@@ -1,35 +1,34 @@
-import ENV from 'config/ENV'
 import React from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TouchableWithoutFeedback, TextInput, Keyboard, Alert } from 'react-native';
-import { Video } from 'expo'
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import moment from 'moment';
-import MultiSlider from '@ptomasroos/react-native-multi-slider'
-
-import apiActions from 'app/utilities/Actions';
-
+import Colors from 'app/constants/Colors';
 import Layout from 'app/constants/Layout'
 import Content from 'app/constants/Content'
 
-import CameraView from 'app/views/CameraView'
+import apiActions from 'app/utilities/Actions';
+
+import Tekst from 'app/components/Tekst'
+import MultiSlider from '@ptomasroos/react-native-multi-slider'
 import Button from 'app/components/Button'
+import PostScroller from 'app/components/PostScroller'
 
 
 export default class MyProfile extends React.Component {
   constructor(){
     super()
     this.state = {
-      windowOpen: moment().subtract(30,'s'),
       status: '',
       statusText: '',
-      range: [9,21],
+      range: [8,20],
+      invertWindow: false,
       initialRange: null,
+      initialInvertWindow: false,
       rawRange: null,
       bio: '',
       initialBio: '',
       edittingBio: false,
-      lastMoved: null,
-      cameraOpen: false,
+      lastMoved: 'start_at',
       videos: [],
       posts: [],
     }
@@ -46,48 +45,47 @@ export default class MyProfile extends React.Component {
         range: range,
         rawRange: range,
         initialRange: range,
+        invertWindow: res.profile.invert_window,
+        initialInvertWindow: res.profile.invert_window,
         posts: res.posts,
       })
-      console.log(res.posts)
+      let lastPostAt = res.posts && res.posts.length > 0 ? 
+        moment(res.posts[res.posts.length-1].created_at) :
+        moment().subtract(2,'d')
+      this.props.setLastPostAt(lastPostAt)
+      // this.props.setFirstVisit(res.ftue)
+      let ftue = res.posts.length === 0
+      ftue = true
+      this.props.setFirstVisit(ftue)
     })
   }
 
   submitBio = async () => {
     let { bio } = this.state
-    let data = { profile: { bio: bio } }
+    let data = { profile: {bio} }
     await apiActions.request('profiles/update', 'PUT', data).catch(e => console.warn(e))
     this.setState({edittingBio: false, bio: bio, initialBio: bio})
     Keyboard.dismiss()
   }
 
   submitRange = () => {
-    let { range } = this.state
-    let data = { profile: { window_start_at: range[0].toString(), window_end_at: range[1].toString() } }
+    let { range, invertWindow } = this.state
+    let data = { profile: { 
+      window_start_at: range[0].toString(), 
+      window_end_at: range[1].toString(),
+      invert_window: invertWindow,
+    } }
     apiActions.request('profiles/update', 'PUT', data).catch(e => console.warn(e))
     this.setState({range: range, initialRange: range, rawRange: range})
     Alert.alert('Schedule changes will take affect at midnight.')
   }
 
   render() {
-    let { invert, range, initialRange, bio, initialBio, edittingBio } = this.state
-
-    if(this.state.cameraOpen){
-      return (
-        <View style={[styles.container, this.props.visible ? null : styles.hidden]}>
-          <CameraView 
-            onCancel={() => this.setState({cameraOpen: false})} 
-            uploadVideo={(videoUri) => {
-              let { videos } = this.state
-              videos.push(videoUri)
-              this.setState({videos})
-            }}
-          /> 
-        </View>
-      )
-    }
+    let { posts, invert, range, initialRange, invertWindow, bio, initialBio, edittingBio } = this.state
+    let { visible } = this.props
 
     return (
-      <View style={[styles.container, this.props.visible ? null : styles.hidden]}>
+      <View style={[styles.container, visible ? null : styles.hidden]}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.inner}>
 
@@ -95,7 +93,7 @@ export default class MyProfile extends React.Component {
           <TextInput
             style={styles.input}
             multiline={true}
-            placeholder="edit bio"
+            placeholder="Edit Bio"
             value={bio}
             onFocus={() => this.setState({edittingBio: true})}
             onChangeText={(bio) => this.setState({bio, edittingBio: true})}
@@ -108,70 +106,32 @@ export default class MyProfile extends React.Component {
           <View style={styles.buttonWrapper}>
             {bio != initialBio && (
               <TouchableOpacity onPress={() => this.setState({bio: this.state.initialBio})}>
-                <Text style={styles.buttonText}>discard</Text>
+                <Tekst small style={styles.buttonText}>discard</Tekst>
               </TouchableOpacity>
             )}
             {edittingBio && (bio != initialBio) && (
               <TouchableOpacity onPress={this.submitBio}>
-                <Text style={styles.buttonText}>save</Text>
+                <Tekst small style={styles.buttonText}>save</Tekst>
               </TouchableOpacity>
             )}
           </View>
         </View>
 
-        <View style={styles.postWrapper}>
+        <PostScroller items={visible ? posts : []} height={220} />
+
+        {/*<View style={styles.postWrapper}>
           <TouchableOpacity onPress={this.handlePost}>
             <View style={styles.iconWrapper}>
-              <Feather name='plus' color='green' size={100} />
+              <Ionicons name='ios-add-circle' color={Colors.pink} size={120} />
             </View>
           </TouchableOpacity>
-        </View>
-
-        {/*this.state.videos.length > 0 && (
-          <View style={styles.videoScrollerWrapper}>
-            <ScrollView horizontal style={styles.videoScroller}>
-              {this.state.videos.map((uri, i) => { return (
-                <Video
-                  key={i}
-                  source={{uri}}
-                  rate={1.0}
-                  volume={1.0}
-                  isMuted={false}
-                  resizeMode="cover"
-                  shouldPlay
-                  isLooping
-                  style={styles.video}
-                />
-              )})}
-            </ScrollView>
-          </View>
-        )*/}
-
-        {this.state.posts.length > 0 && (
-          <View style={styles.videoScrollerWrapper}>
-            <ScrollView horizontal style={styles.videoScroller}>
-              {this.state.posts.map((post, i) => { return (
-                <Video
-                  key={i}
-                  source={{uri: `${ENV.ROOT}${post.url}`}}
-                  rate={1.0}
-                  volume={1.0}
-                  isMuted={false}
-                  resizeMode="cover"
-                  shouldPlay
-                  isLooping
-                  style={styles.video}
-                />
-              )})}
-            </ScrollView>
-          </View>
-        )}
+        </View>*/}
 
         <View style={styles.rangeWrapper}>
           <View style={styles.rangeTextWrapper}>
-            <Text style={[styles.timeText, styles.buttonText]}>{moment().hour(range[0]).format('ha')}</Text>
-            <Text style={[styles.buttonText]}>-</Text>
-            <Text style={[styles.timeText, styles.buttonText]}>{moment().hour(range[1]).format('ha')}</Text>
+            <Tekst small style={[styles.timeText, styles.buttonText, {textAlign: 'right'}]}>{moment().hour(range[0]).format('ha')}</Tekst>
+            <Tekst small style={[styles.buttonText]}>-</Tekst>
+            <Tekst small style={[styles.timeText, styles.buttonText, {textAlign: 'left'}]}>{moment().hour(range[1]).format('ha')}</Tekst>
           </View>
           <MultiSlider
             values={range}
@@ -182,16 +142,24 @@ export default class MyProfile extends React.Component {
             max={24}
             step={1}
             snapped={true}
+            markerStyle={{backgroundColor: Colors.pink}}
+            selectedStyle={{backgroundColor: invertWindow ? Colors.white : Colors.pink}}
+            trackStyle={{backgroundColor: invertWindow ? Colors.pink : Colors.white}}
           />
           <View style={styles.buttonWrapper}>
             {range != initialRange && (
-              <TouchableOpacity onPress={() => this.setState({range: this.state.initialRange})}>
-                <Text style={styles.buttonText}>reset</Text>
+              <TouchableOpacity onPress={() => this.setState({range: this.state.initialRange, invertWindow: this.state.initialInvertWindow})}>
+                <Tekst small style={styles.buttonText}>reset</Tekst>
+              </TouchableOpacity>
+            )}
+            {(range != initialRange) && (
+              <TouchableOpacity onPress={this.invertWindow}>
+                <Tekst small style={styles.buttonText}>invert</Tekst>
               </TouchableOpacity>
             )}
             {(range != initialRange) && (
               <TouchableOpacity onPress={this.submitRange}>
-                <Text style={styles.buttonText}>save</Text>
+                <Tekst small style={styles.buttonText}>save</Tekst>
               </TouchableOpacity>
             )}
           </View>
@@ -203,8 +171,13 @@ export default class MyProfile extends React.Component {
     );
   }
 
-  handlePost = () => {
-    this.setState({cameraOpen: true})
+  invertWindow = () => {
+    let { range, invertWindow, lastMoved } = this.state
+    invertWindow = !invertWindow
+    this.setState({invertWindow}, () => {
+      range = this.maintainRange(range, lastMoved)
+      this.setState({range})
+    })
   }
 
   handleSliderFinish = (rawRange) => {
@@ -222,23 +195,38 @@ export default class MyProfile extends React.Component {
 
   maintainRange = (range, lastMoved) => {
     let prevRange = this.state.range
+    let invertWindow = this.state.invertWindow
     const windowRange = 12
-    const diff = range[1] - range[0]
-    if(diff < windowRange){
-      if(lastMoved == 'start_at'){ // sliding start_at
-        if(range[0] + windowRange > 24){
-          range = [24-windowRange, 24]
+    if(invertWindow){
+      let fromMidnight = 24 - range[1]
+      let diff = fromMidnight + range[0]
+      if(diff < windowRange){
+        if(lastMoved == 'start_at'){ // sliding start_at
+          range = [range[0], Math.min(24, (24 + range[0] - windowRange))]
         }
-        else {
-          range = [range[0], range[0] + windowRange]
+        else { // sliding end_at
+          range = [windowRange - fromMidnight, range[1]]
         }
-      }
-      else { // sliding end_at
-        if(range[1] - windowRange < 0){
-          range = [0, windowRange]
+      }      
+    }
+    else {
+      diff = range[1] - range[0]
+      if(diff < windowRange){
+        if(lastMoved == 'start_at'){ // sliding start_at
+          if(range[0] + windowRange > 24){
+            range = [24-windowRange, 24]
+          }
+          else {
+            range = [range[0], range[0] + windowRange]
+          }
         }
-        else {
-          range = [range[1] - windowRange, range[1]]
+        else { // sliding end_at
+          if(range[1] - windowRange < 0){
+            range = [0, windowRange]
+          }
+          else {
+            range = [range[1] - windowRange, range[1]]
+          }
         }
       }
     }
@@ -250,18 +238,21 @@ export default class MyProfile extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#efefef',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    // justifyContent: 'center',
+    backgroundColor: Colors.yellow,
     ...StyleSheet.absoluteFillObject,
     paddingBottom: 40,
+    paddingTop: 40,
   },
   inner: {
     flex: 1,
     alignItems: 'center',
+    flexDirection: 'column',
     justifyContent: 'space-around',
+    paddingVertical: 50,
+    // paddingBottom: 100,
     ...StyleSheet.absoluteFillObject,
+    top: 100,
+    bottom: 100,
   },
   hidden: {
     height: 0,
@@ -273,8 +264,6 @@ const styles = StyleSheet.create({
     // borderWidth: 3,
   },
   iconWrapper: {
-    borderWidth: 5,
-    borderColor: 'green',
     width: 120,
     height: 120,
     borderRadius: 60,
@@ -306,6 +295,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 40,
+    // borderWidth: 3,
   },
   rangeTextWrapper: {
     // alignSelf: 'stretch',
@@ -314,16 +304,17 @@ const styles = StyleSheet.create({
     // borderWidth: 1,
   },
   timeText: {
-    width: 80,
-    // borderWidth: 1,
+    // width: 80,
+    flex: 1,
   },
   bioWrapper: {
     alignSelf: 'stretch',
-    padding: 40,
-    paddingBottom: 0,
+    // padding: 40,
+    // paddingBottom: 0,
   },
   postWrapper: {
     // borderWidth: 1,
+    margin: 20,
   },
   buttonWrapper: {
     alignSelf: 'stretch',
@@ -343,22 +334,12 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     minHeight: 40,
     // marginBottom: 10,
-    padding: 20,
-    borderBottomWidth: 1,
-    borderColor: '#444',
-    color: '#111',
-  },
-  videoScrollerWrapper: {
-    alignSelf: 'stretch',
-    height: 220,
-  },
-  videoScroller: {
-    // alignSelf: 'stretch',
-  },
-  video: {
-    width: 100, 
-    height: 200, 
-    // borderWidth: 2,
-    margin: 10,
+    // padding: 20,
+    // borderBottomWidth: 1,
+    borderColor: Colors.white,
+    fontWeight: '900',
+    fontSize: 30,
+    color: Colors.white,
+    textAlign: 'center',
   },
 });

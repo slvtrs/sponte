@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "lifespyle",
-    "description": "This project is really great.",
-    "slug": "lifespyle",
+    "name": "Spoofy",
+    "description": "An unfiltered look at lifestyles.",
+    "slug": "spoofy",
     "privacy": "public",
     "sdkVersion": "32.0.0",
     "platforms": ["ios", "android"],
@@ -11,7 +11,7 @@
     "icon": "./assets/icon.png",
     "splash": {
       "image": "./assets/splash.png",
-      "resizeMode": "contain",
+      "resizeMode": "cover",
       "backgroundColor": "#ffffff"
     },
     "updates": {
@@ -21,7 +21,14 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
-    }
+      "supportsTablet": false
+    },
+    "android": {
+      "icon": "./assets/icon-android.png",
+    },
+    "notification": {
+      "icon": "./assets/notification_icon.png",
+      "color": "#f961b9"
+    },
   }
 }

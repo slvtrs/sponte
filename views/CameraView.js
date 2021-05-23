@@ -1,10 +1,13 @@
 import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, TouchableWithoutFeedback, TextInput, Keyboard, Alert } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, TouchableWithoutFeedback, TextInput, Keyboard, Alert, ActivityIndicator, Animated, BackHandler } from 'react-native';
 import { Camera, Permissions, Video } from 'expo'
+import Colors from 'app/constants/Colors'
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 
 import apiActions from 'app/utilities/Actions';
 import RecordingShutter from 'app/components/RecordingShutter';
 // import { CircularProgress } from 'app/components/CircularProgress';
+import Tekst from 'app/components/Tekst'
 
 export default class CameraView extends React.Component {
   constructor(){
@@ -12,9 +15,14 @@ export default class CameraView extends React.Component {
     this.state = {
       hasCameraPermission: null,
       hasAudioPermission: null,
-      type: Camera.Constants.Type.back,
+      type: Camera.Constants.Type.front,
       recording: false,
       videoUri: null,
+      countdown: 5,
+      countdownAnim: new Animated.Value(3),
+      // colors: [Colors.pink, Colors.yellow, Colors.blue]
+      // colors: [Colors.dark, Colors.white, Colors.yellow, Colors.blue, Colors.pink]
+      colors: [Colors.dark]
     }
   }
 
@@ -25,19 +33,53 @@ export default class CameraView extends React.Component {
     let hasAudioPermission = await requestAudioPermission()
     this.setState({hasCameraPermission, hasAudioPermission})
     this.duration = 7
+    this.countdown()
+    BackHandler.addEventListener('hardwareBackPress', this._handleBackPress)
+  }
+
+  componentWillUnmount(){
+    BackHandler.removeEventListener('hardwareBackPress', this._handleBackPress);
+  }
+
+  _handleBackPress = () => {
+    this.props.onCancel()
+    return true
+  }
+
+  countdown = () => {
+    if(this.state.countdown > 0){
+      Animated.timing(this.state.countdownAnim, {
+        toValue: 0,
+        duration: 1000,
+        delay: 0,
+      }).start((done) => {
+        if(!done.finished) return
+        this.setState({countdown: this.state.countdown-1})
+        this.state.countdownAnim.setValue(1)
+        this.countdown()
+      })
+    }
+    else {
+      this.snap()
+    }
   }
 
   render() {
-    const { hasCameraPermission } = this.state
+    const { hasCameraPermission, recording, countdown, colors, countdownAnim } = this.state
+    let backgroundColor = countdown >= colors.length ? colors[countdown % colors.length] : colors[countdown]
+    // let countdownSize = countdownAnim.interpolate({
+    //   inputRange: [0, 1],
+    //   outputRange: ['3.0', '0.0'],
+    // })
 
     if (hasCameraPermission === null) {
       return <View />
     } else if (hasCameraPermission === false) {
-      return <Text>No access to camera</Text>
+      return <Tekst>No access to camera</Tekst>
     } else if (this.state.videoUri) {
       return (
         <View style={styles.container}>
-          <TouchableOpacity onPress={this.props.onCancel}>
+          {/*<TouchableOpacity onPress={this.props.onCancel}>*/}
             <Video
               source={{ uri: this.state.videoUri }}
               rate={1.0}
@@ -48,7 +90,12 @@ export default class CameraView extends React.Component {
               isLooping
               style={styles.video}
             />
-          </TouchableOpacity>
+            <ActivityIndicator
+              color="white"
+              size="small"
+              style={styles.activityIndicator}
+            />
+          {/*</TouchableOpacity>*/}
         </View>
       )
     } else {
@@ -59,45 +106,64 @@ export default class CameraView extends React.Component {
             style={styles.container} 
             type={this.state.type}
           >
-            <View style={styles.content}>
+            {!recording && countdown > 0 && (
+              <View style={styles.content}>
 
-              <View style={styles.buttonRowTop}>
-                <TouchableOpacity onPress={this.props.onCancel}>
-                  <Text style={styles.buttonText}>Cancel</Text>
+                <View style={styles.countdownWrapper}>
+                  <Animated.View style={{ transform: [{scale: countdownAnim}] }}>
+                    <Tekst large>{countdown}</Tekst>
+                  </Animated.View>
+                </View>
+
+                <View style={[styles.countdownBackground, {backgroundColor}]} />
+
+                <View style={styles.section} />
+
+                <TouchableOpacity onPress={this.props.onCancel} style={styles.section}>
+                  <Tekst>Cancel</Tekst>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    this.setState({
-                      type: this.state.type === Camera.Constants.Type.back
-                        ? Camera.Constants.Type.front
-                        : Camera.Constants.Type.back,
-                    })
-                  }}>
-                  <Text style={styles.buttonText}>
+
+                <View style={styles.section} />
+
+                <TouchableOpacity onPress={this.handleFlip} style={styles.section}>
+                  <Tekst>
                     {' '}Flip{' '}
-                  </Text>
+                    {/*this.state.type === Camera.Constants.Type.back ?
+                      <MaterialIcons name={`photo`} size={20} color={Colors.white} /> :
+                      <MaterialIcons name={`tag-faces`} size={20} color={Colors.white} />
+                    */}
+                  </Tekst>
                 </TouchableOpacity>
+
+                <View style={styles.section} />
+
+                {/*<View style={styles.buttonRowBottom}>
+                  <TouchableOpacity onPress={this.snap}>
+                    <View style={[styles.shutterButton, this.state.recording ? styles.recording : null]} />
+                  </TouchableOpacity>
+                </View>*/}
+
               </View>
-
-              <View style={styles.buttonRowBottom}>
-                <TouchableOpacity onPress={this.snap}>
-                  <View style={[styles.shutterButton, this.state.recording ? styles.recording : null]} />
-                </TouchableOpacity>
-              </View>
-
-            </View>
-
+             )}
           </Camera>
         </View>
       )
     }
   }
 
+  handleFlip = () => {
+    this.setState({
+      type: this.state.type === Camera.Constants.Type.back
+        ? Camera.Constants.Type.front
+        : Camera.Constants.Type.back,
+    })
+  }
+
   snap = async () => {
     if (this.camera && !this.state.recording) {
       this.setState({recording: true})
       let video = await this.camera.recordAsync({maxDuration: this.duration});
-      this.props.uploadVideo(video.uri)
+      // this.props.uploadVideo(video.uri)
       this.setState({videoUri: video.uri})
 
       console.log(video)
@@ -114,15 +180,10 @@ export default class CameraView extends React.Component {
       const data = new FormData();
       data.append('file', file)
       let res = await apiActions.request('posts', 'POST', data, 0, true)
-      // // let res = await apiActions.request('posts', 'POST', data, 0)
-
-      // const data = {
-      //   post: {
-      //     file: video,
-      //   },
-      // }
-      // let res = await apiActions.request('posts', 'POST', data)
-      // console.log(res)
+      
+      if(res.success){
+        this.props.onPostSuccess(res.post)
+      }
 
       this.props.onCancel() 
     }
@@ -138,7 +199,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     // justifyContent: 'center',
     ...StyleSheet.absoluteFillObject,
-    paddingBottom: 40,
+    // paddingBottom: 40,
   },
   video: {
     flex: 1,
@@ -151,8 +212,9 @@ const styles = StyleSheet.create({
     flex: 1,
     alignSelf: 'stretch',
     flexDirection: 'column',
+    // alignItems: 'center',
+    // justifyContent: 'space-around',
     alignItems: 'stretch',
-    justifyContent: 'space-between',
   },
   buttonRowTop: {
     marginTop: 20,
@@ -182,6 +244,25 @@ const styles = StyleSheet.create({
     fontSize: 18, 
     color: 'white',
   },
+  activityIndicator: {
+    position: 'absolute',
+  },
+  countdownWrapper: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...StyleSheet.absoluteFillObject,
+  },
+  countdownBackground: {
+    opacity: 0.4,
+    ...StyleSheet.absoluteFillObject,
+  },
+  section: {
+    // alignSelf: 'stretch',
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderColor: Colors.white,
+  }
 });
 
 
