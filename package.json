@@ -12,7 +12,7 @@
     "@ptomasroos/react-native-multi-slider": "^1.0.0",
     "babel-plugin-module-resolver": "^3.2.0",
     "expo": "^32.0.0",
-    "moment": "^2.22.2",
+    "moment": "^2.29.2",
     "react": "16.5.0",
     "react-native": "https://github.com/expo/react-native/archive/sdk-32.0.0.tar.gz"
   }
